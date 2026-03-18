@@ -1,0 +1,105 @@
+name: Validate motd.json
+
+on:
+  push:
+    paths:
+      - 'motd.json'
+  pull_request:
+    paths:
+      - 'motd.json'
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate JSON syntax
+        run: jq empty motd.json
+
+      - name: Validate category definitions are complete
+        run: |
+          jq -e '
+            .categories | to_entries[] |
+            if .value.label == null then
+              error("category \(.key) is missing label")
+            else
+              .
+            end
+          ' motd.json
+
+      - name: Validate all message categories exist
+        run: |
+          jq -e '
+            . as $root |
+            .messages | to_entries[] |
+            .key as $index |
+            .value.category as $category |
+            if $category == null then
+              error("message at index \($index) is missing a category field")
+            elif ($root.categories | has($category)) | not then
+              error("message at index \($index) has unknown category: \($category)")
+            else
+              .
+            end
+          ' motd.json
+
+      - name: Validate message content is not empty
+        run: |
+          jq -e '
+            .messages | to_entries[] |
+            .key as $index |
+            if .value.content == null or .value.content == "" or .value.content == [] then
+              error("message at index \($index) has empty content")
+            else
+              .
+            end
+          ' motd.json
+
+      - name: Validate message content items are strings
+        run: |
+          jq -e '
+            .messages | to_entries[] |
+            .key as $index |
+            .value.content |
+            if type == "array" then
+              to_entries[] |
+              if (.value | type) != "string" then
+                error("message at index \($index) has non-string content item at index \(.key)")
+              else
+                .
+              end
+            elif type != "string" then
+              error("message at index \($index) content is not a string or array")
+            else
+              .
+            end
+          ' motd.json
+
+      - name: Validate message dates are valid ISO 8601
+        run: |
+          jq -e '
+            .messages | to_entries[] |
+            .key as $index |
+            (.value.start, .value.end) |
+            select(. != null) |
+            if test("^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$") | not then
+              error("message at index \($index) has invalid date format: \(.)")
+            else
+              .
+            end
+          ' motd.json
+
+      - name: Validate start is before end when both are set
+        run: |
+          jq -e '
+            .messages | to_entries[] |
+            .key as $index |
+            select(.value.start != null and .value.end != null) |
+            if .value.start >= .value.end then
+              error("message at index \($index) has start date not before end date: \(.value.start) >= \(.value.end)")
+            else
+              .
+            end
+          ' motd.json
