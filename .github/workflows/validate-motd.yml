@@ -2,18 +2,33 @@ name: Validate motd.json
 
 on:
   push:
-    paths:
-      - 'motd.json'
   pull_request:
-    paths:
-      - 'motd.json'
   workflow_dispatch:
 
 jobs:
+  check-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      motd_changed: ${{ steps.filter.outputs.motd }}
+    steps:
+      - uses: actions/checkout@v6.0.2
+        with:
+          fetch-depth: 0
+      - uses: dorny/paths-filter@v4.0.1
+        id: filter
+        with:
+          filters: |
+            motd:
+              - 'motd.json'
+
   validate:
     runs-on: ubuntu-latest
+    needs: check-changes
+    if: ${{ needs.check-changes.outputs.motd_changed == 'true' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6.0.2
+        with:
+          fetch-depth: 0
 
       - name: Validate JSON syntax
         run: jq empty motd.json
