@@ -24,7 +24,7 @@
             "category": "tip",
             "content": [
                 "Did you know? You can bulk-update contacts via the API.",
-                "See https://developer.mautic.org for examples."
+                "See [here](https://developer.mautic.org) for examples."
             ],
             "start": null,
             "end": null
@@ -32,8 +32,8 @@
         {
             "category": "fundraiser",
             "content": [
-                "Mautic is facing a $50k funding gap in 2026.",
-                "Support the project: https://mautic.org/2026-fundraiser/"
+                "Mautic is facing **a $50k funding gap** in 2026.",
+                "Support the project: [https://mautic.org/2026-fundraiser/](https://mautic.org/2026-fundraiser/)"
             ],
             "start": null,
             "end": null
